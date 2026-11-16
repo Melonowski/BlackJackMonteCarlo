@@ -17,7 +17,7 @@ deck = np.array([
     for value in values
 ])
 
-newDeck = deck
+newDeck = deck.copy()
 
 playerCards = []
 dealerCards = []
@@ -26,8 +26,8 @@ dealerCards = []
 def firstCards():
     global newDeck
     index = np.random.randint(len(newDeck))
-    playerCards.append(deck[index])
-    newDeck = np.delete(deck,index,axis=0)
+    playerCards.append(newDeck[index])
+    newDeck = np.delete(newDeck,index,axis=0)
 
     index = np.random.randint(len(newDeck))
     playerCards.append(newDeck[index])
@@ -44,10 +44,12 @@ def firstCards():
     strategy()
 
 def stopAtSeventeen():
-    if handValue(playerCards) > 17:
-        pm.stop()
+    if handValue(playerCards) >= 17:
+        gettingWinner()
     elif handValue(playerCards) < 17:
-        pm.hit()
+        global newDeck
+        newDeck = pm.hit(playerCards,newDeck)
+        strategy()
 
 def handValue(cards):
     hv = 0
@@ -60,11 +62,10 @@ def handValue(cards):
         else:
             hv += int(card[1])
 
+    hv += 11 * aces
     for A in range(aces):
-        if hv + 11 > 21:
-            hv += 1
-        else:
-            hv += 11
+        if hv > 21:
+            hv -= 10
 
     return hv
 
@@ -77,19 +78,38 @@ def gettingWinner():
     if handValue(playerCards) == 21 and len(playerCards) == 2:
         print("BLACKJACK!!!")
         chips += betAmount * (3/2)
-    else:
-        if handValue(dealerCards) < 17 :
-            index = np.random.randint(len(newDeck))
-            dealerCards.append(newDeck[index])
-            newDeck = np.delete(newDeck, index, axis=0)
-        else:
-            if handValue(playerCards) > handValue(dealerCards):
-                chips += betAmount
-            elif handValue(playerCards) == handValue(dealerCards):
-                pass
-                #for now nothing
+        return
+
+    if handValue(playerCards) > 21:
+        chips -= betAmount
+        return
+
+    while handValue(dealerCards) < 17 :
+        index = np.random.randint(len(newDeck))
+        dealerCards.append(newDeck[index])
+        newDeck = np.delete(newDeck, index, axis=0)
+
+    if handValue(playerCards) > handValue(dealerCards) or handValue(dealerCards) > 21:
+        chips += betAmount
+    elif handValue(playerCards) < handValue(dealerCards):
+        chips -= betAmount
+
+def playGame():
+    global playerCards
+    global dealerCards
+    global newDeck
+
+    playerCards = []
+    dealerCards = []
+
+    firstCards()
+
+    if len(newDeck) < 0.2 * len(deck):
+        newDeck = deck.copy()
+
+
 
 if __name__ == "__main__":
-    firstCards()
+    playGame()
 
 
