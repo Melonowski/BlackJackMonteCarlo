@@ -34,7 +34,7 @@ wins = 0
 draws = 0
 loses = 0
 currentChips = []
-outputsY = [blackjacks,wins,draws,loses,fura,loses+fura,wins+blackjacks]
+outputsY = []
 outputsX = ["BlackJacks","Wins","Draws","Loses","Fura","Loses + Fura","Wins + BlackJacks"]
 
 def firstCards():
@@ -59,11 +59,13 @@ def firstCards():
         gettingWinner()
 
 def strategy(choice):
+    global newDeck
     if choice == 1:
-        while strat.stopAtSeventeen(playerCards,handValue(playerCards),newDeck) is False:
-            strat.stopAtSeventeen(playerCards, handValue(playerCards), newDeck)
-        else:
-            return True
+        while not strat.stopAtSeventeen(handValue(playerCards)):
+            newDeck = pm.hit(playerCards,newDeck)
+        return True
+
+
 
 
 def handValue(cards):
@@ -90,8 +92,11 @@ def gettingWinner():
     global newDeck
     global wins,draws,loses,blackjacks,fura
     if handValue(playerCards) == 21 and len(playerCards) == 2:
-        chips += betAmount * (3/2)
-        blackjacks += 1
+        if handValue(dealerCards) == 21:
+            draws += 1
+        else:
+            chips += betAmount * (3/2)
+            blackjacks += 1
         return
 
     if handValue(playerCards) > 21:
@@ -122,10 +127,12 @@ def playGame():
     playerCards = []
     dealerCards = []
 
-    firstCards()
-
     if len(newDeck) < 0.2 * len(deck):
         newDeck = deck.copy()
+
+
+    firstCards()
+
 
 
 
@@ -133,14 +140,14 @@ if __name__ == "__main__":
     x0 = 0
     for i in range(games):
         playGame()
-        if chips == 0 and x0 == 0:
+        if chips <= 0 and x0 == 0:
             x0 = i
 
     EV = (chips-startingChips)/(games * betAmount)
 
 
     plt.figure(1)
-    plt.plot(range(games),currentChips,label = f"House Edge is {EV}")
+    plt.plot(range(games),currentChips,label = f"House Edge is {-EV * 100:.2f}%")
     plt.xlabel("Number of Games")
     plt.ylabel("Current Chips")
     plt.title("Stop At 17 Strategy")
